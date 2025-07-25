@@ -52,7 +52,7 @@ filtered_df = df[
     (df['dteday'] <= pd.to_datetime(end_date)) &
     (df['season'].isin(seasons)) &
     (df['weathersit'].isin(weathers))
-]
+].copy()
 
 # Statistik Ringkas
 st.subheader("📊 Ringkasan Data")
@@ -97,7 +97,6 @@ st.pyplot(fig3)
 # Visualisasi 4 - Hari Libur vs Hari Kerja
 st.subheader("📅 Perbandingan Peminjaman: Hari Libur vs Hari Kerja")
 
-# Mapping label hari
 working_map = {0: 'Libur', 1: 'Hari Kerja'}
 filtered_df['workingday_label'] = filtered_df['workingday'].map(working_map)
 
@@ -108,7 +107,7 @@ ax4.set_xlabel("Jenis Hari")
 ax4.set_ylabel("Jumlah Peminjaman")
 st.pyplot(fig4)
 
-# Tambahan Insight Otomatis
+# Insight tambahan
 avg_working = filtered_df.groupby('workingday_label')['cnt'].mean().to_dict()
 st.markdown(f"""
 **💡 Insight Tambahan:**  
