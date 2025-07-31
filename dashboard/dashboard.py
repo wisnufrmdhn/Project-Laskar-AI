@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # Konfigurasi halaman
 st.set_page_config(
@@ -100,14 +101,81 @@ ax1.set_xlabel("Musim")
 ax1.set_ylabel("Total Peminjaman")
 st.pyplot(fig1)
 
-# Visualisasi 2 - Pengaruh Cuaca
+# Visualisasi 2 - Pengaruh Cuaca (Pertanyaan 2 - Lengkap sesuai notebook)
 st.subheader("🌦️ Pengaruh Cuaca terhadap Peminjaman")
-fig2, ax2 = plt.subplots()
-sns.boxplot(data=filtered_df, x='weathersit', y='cnt', ax=ax2)
-ax2.set_title("Distribusi Jumlah Peminjaman berdasarkan Cuaca")
-ax2.set_xlabel("Cuaca")
-ax2.set_ylabel("Jumlah Peminjaman")
-st.pyplot(fig2)
+
+# 2.1 Heatmap Korelasi
+st.markdown("**2.1 Matriks Korelasi Variabel Cuaca dan Peminjaman**")
+fig_corr, ax_corr = plt.subplots(figsize=(8, 6))
+correlation_matrix = filtered_df[['temp', 'atemp', 'hum', 'windspeed', 'cnt']].corr()
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0, ax=ax_corr)
+ax_corr.set_title('Matriks Korelasi Variabel Cuaca dan Peminjaman')
+st.pyplot(fig_corr)
+
+# 2.2 Scatter Plots
+st.markdown("**2.2 Hubungan Variabel Cuaca dengan Peminjaman**")
+fig_scatter, ((ax1_scatter, ax2_scatter), (ax3_scatter, ax4_scatter)) = plt.subplots(2, 2, figsize=(12, 10))
+
+# Suhu vs Peminjaman
+ax1_scatter.scatter(filtered_df['temp'], filtered_df['cnt'], alpha=0.5)
+ax1_scatter.set_xlabel('Suhu (Dinormalisasi)')
+ax1_scatter.set_ylabel('Jumlah Peminjaman Sepeda')
+ax1_scatter.set_title('Hubungan Suhu dengan Peminjaman Sepeda')
+
+# Kelembapan vs Peminjaman
+ax2_scatter.scatter(filtered_df['hum'], filtered_df['cnt'], alpha=0.5, color='green')
+ax2_scatter.set_xlabel('Kelembapan')
+ax2_scatter.set_ylabel('Jumlah Peminjaman Sepeda')
+ax2_scatter.set_title('Hubungan Kelembapan dengan Peminjaman Sepeda')
+
+# Kecepatan Angin vs Peminjaman
+ax3_scatter.scatter(filtered_df['windspeed'], filtered_df['cnt'], alpha=0.5, color='red')
+ax3_scatter.set_xlabel('Kecepatan Angin')
+ax3_scatter.set_ylabel('Jumlah Peminjaman Sepeda')
+ax3_scatter.set_title('Hubungan Kecepatan Angin dengan Peminjaman Sepeda')
+
+# Boxplot Cuaca
+sns.boxplot(data=filtered_df, x='weathersit', y='cnt', ax=ax4_scatter)
+ax4_scatter.set_title('Distribusi Peminjaman berdasarkan Kondisi Cuaca')
+ax4_scatter.set_xlabel('Kondisi Cuaca')
+ax4_scatter.set_ylabel('Jumlah Peminjaman')
+ax4_scatter.tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+st.pyplot(fig_scatter)
+
+# 2.3 Analisis Kategori Suhu
+st.markdown("**2.3 Analisis Peminjaman berdasarkan Kategori Suhu**")
+
+# Kategorisasi peminjaman berdasarkan kondisi cuaca
+filtered_df['temp_category'] = pd.cut(filtered_df['temp'],
+    bins=[0, 0.2, 0.4, 0.6, 0.8, 1],
+    labels=['Sangat Dingin', 'Dingin', 'Sedang', 'Hangat', 'Panas'])
+
+# Rata-rata peminjaman per kategori suhu
+peminjaman_per_suhu = filtered_df.groupby('temp_category')['cnt'].mean().sort_values(ascending=False)
+
+fig_temp_cat, ax_temp_cat = plt.subplots(figsize=(10, 6))
+peminjaman_per_suhu.plot(kind='bar', ax=ax_temp_cat, color='skyblue')
+ax_temp_cat.set_title('Rata-rata Peminjaman Sepeda per Kategori Suhu')
+ax_temp_cat.set_xlabel('Kategori Suhu')
+ax_temp_cat.set_ylabel('Rata-rata Jumlah Peminjaman')
+ax_temp_cat.tick_params(axis='x', rotation=45)
+plt.tight_layout()
+st.pyplot(fig_temp_cat)
+
+# Insight statistik
+st.markdown("**📊 Insight Statistik:**")
+corr_cnt = filtered_df[['temp', 'atemp', 'hum', 'windspeed', 'cnt']].corr()['cnt']
+st.write("**Korelasi dengan Jumlah Peminjaman:**")
+st.write(f"- Suhu: {corr_cnt['temp']:.3f}")
+st.write(f"- Suhu Terasa: {corr_cnt['atemp']:.3f}")
+st.write(f"- Kelembapan: {corr_cnt['hum']:.3f}")
+st.write(f"- Kecepatan Angin: {corr_cnt['windspeed']:.3f}")
+
+st.write("**Rata-rata Peminjaman per Kategori Suhu:**")
+for category, value in peminjaman_per_suhu.items():
+    st.write(f"- {category}: {value:.0f}")
 
 # Visualisasi 3 - Tren Bulanan
 st.subheader("📈 Tren Peminjaman Sepeda Bulanan")
