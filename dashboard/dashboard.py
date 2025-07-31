@@ -32,7 +32,27 @@ def load_data():
 
     return df
 
+# Load hour dataset untuk analisis per jam
+@st.cache_data
+def load_hour_data():
+    hour_df = pd.read_csv("hour.csv")
+    hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
+    
+    season_map = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
+    weather_map = {
+        1: 'Clear',
+        2: 'Cloudy',
+        3: 'Light Rain/Snow',
+        4: 'Heavy Rain/Snow'
+    }
+    
+    hour_df['season'] = hour_df['season'].map(season_map)
+    hour_df['weathersit'] = hour_df['weathersit'].map(weather_map)
+    
+    return hour_df
+
 df = load_data()
+hour_df = load_hour_data()
 
 # Sidebar filter
 st.sidebar.header("🔎 Filter Data")
@@ -46,12 +66,20 @@ end_date = st.sidebar.date_input("Sampai Tanggal", min_value=min_date, max_value
 seasons = st.sidebar.multiselect("Pilih Musim", df['season'].unique(), default=df['season'].unique())
 weathers = st.sidebar.multiselect("Pilih Cuaca", df['weathersit'].unique(), default=df['weathersit'].unique())
 
-# Apply filter
+# Apply filter untuk data harian
 filtered_df = df[
     (df['dteday'] >= pd.to_datetime(start_date)) &
     (df['dteday'] <= pd.to_datetime(end_date)) &
     (df['season'].isin(seasons)) &
     (df['weathersit'].isin(weathers))
+].copy()
+
+# Apply filter untuk data per jam
+filtered_hour_df = hour_df[
+    (hour_df['dteday'] >= pd.to_datetime(start_date)) &
+    (hour_df['dteday'] <= pd.to_datetime(end_date)) &
+    (hour_df['season'].isin(seasons)) &
+    (hour_df['weathersit'].isin(weathers))
 ].copy()
 
 # Statistik Ringkas
@@ -94,25 +122,25 @@ ax3.set_xlabel("Bulan")
 plt.xticks(rotation=45)
 st.pyplot(fig3)
 
-# Visualisasi 4 - Hari Libur vs Hari Kerja
-st.subheader("📅 Perbandingan Peminjaman: Hari Libur vs Hari Kerja")
+# Visualisasi 4 - Hari Libur vs Hari Kerja (menggunakan data per jam)
+st.subheader("📅 Perbandingan Peminjaman: Hari Libur vs Hari Kerja (per Jam)")
 
 working_map = {0: 'Libur', 1: 'Hari Kerja'}
-filtered_df['workingday_label'] = filtered_df['workingday'].map(working_map)
+filtered_hour_df['workingday_label'] = filtered_hour_df['workingday'].map(working_map)
 
 fig4, ax4 = plt.subplots()
-sns.boxplot(data=filtered_df, x='workingday_label', y='cnt', palette='Set2', ax=ax4)
-ax4.set_title("Distribusi Jumlah Peminjaman: Hari Kerja vs Libur")
+sns.boxplot(data=filtered_hour_df, x='workingday_label', y='cnt', palette='Set2', ax=ax4)
+ax4.set_title("Distribusi Jumlah Peminjaman per Jam: Hari Kerja vs Libur")
 ax4.set_xlabel("Jenis Hari")
-ax4.set_ylabel("Jumlah Peminjaman")
+ax4.set_ylabel("Jumlah Peminjaman per Jam")
 st.pyplot(fig4)
 
-# Insight tambahan
-avg_working = filtered_df.groupby('workingday_label')['cnt'].mean().to_dict()
+# Insight tambahan menggunakan data per jam
+avg_working_hour = filtered_hour_df.groupby('workingday_label')['cnt'].mean().to_dict()
 st.markdown(f"""
 **💡 Insight Tambahan:**  
-- Rata-rata peminjaman pada **hari kerja**: `{avg_working.get('Hari Kerja', 0):,.0f}`  
-- Rata-rata peminjaman pada **hari libur**: `{avg_working.get('Libur', 0):,.0f}`
+- Rata-rata peminjaman per jam pada **hari kerja**: `{avg_working_hour.get('Hari Kerja', 0):,.0f}`  
+- Rata-rata peminjaman per jam pada **hari libur**: `{avg_working_hour.get('Libur', 0):,.0f}`
 """)
 
 st.markdown("---")
